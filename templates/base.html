@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AkıllıTakip Pro{% endblock %} – Sporcu Analiz Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { gold: '#F59E0B', blue: '#3B82F6', darkBg: '#0F172A', cardDark: '#1E293B' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .nav-link.active { background: rgba(59,130,246,0.12); color: #3B82F6; font-weight: 600; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-brand-darkBg dark:text-slate-100 transition-colors duration-300 font-sans antialiased">
+
+    <nav class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-40 px-4 md:px-6 py-3 flex justify-between items-center shadow-sm">
+        <div class="flex items-center space-x-3">
+            <button class="lg:hidden p-2 text-slate-400" onclick="document.getElementById('sidebar').classList.toggle('hidden')">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white shadow-md">
+                <i class="fa-solid fa-heart-pulse text-xl animate-pulse"></i>
+            </div>
+            <div>
+                <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-500 bg-clip-text text-transparent">AkıllıTakip</span>
+                <span class="text-xs block text-slate-400">Performans Analiz Motoru v2.0</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <form action="" method="GET" class="flex items-center space-x-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden md:inline">Sporcu:</label>
+                <select name="athlete_id" onchange="this.form.submit()" class="bg-slate-100 dark:bg-slate-800 text-sm font-medium rounded-lg px-3 py-2 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500">
+                    {% for a in athletes %}
+                        <option value="{{ a.id }}" {% if a.id == current_athlete.id %}selected{% endif %}>{{ a.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <button onclick="document.getElementById('athleteModal').classList.remove('hidden')" class="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition shadow" title="Yeni Sporcu Ekle">
+                <i class="fa-solid fa-user-plus"></i>
+            </button>
+
+            <div class="relative cursor-pointer" onclick="toggleNotifDropdown()">
+                <div class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                </div>
+                {% if unread_notif_count > 0 %}
+                    <span id="notif-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-bounce">{{ unread_notif_count }}</span>
+                {% endif %}
+                <div id="notifDropdown" class="hidden absolute right-0 mt-3 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 text-sm z-50">
+                    <div class="px-4 py-2 font-bold border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                        <span>Bildirimler</span>
+                        <button onclick="readAllNotifs({{ current_athlete.id }})" class="text-xs text-blue-500 hover:underline">Tümünü Oku</button>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto custom-scrollbar">
+                        {% for n in notifications %}
+                            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700 {% if not n.is_read %}bg-blue-50/50 dark:bg-blue-900/20{% endif %}">
+                                <p class="text-xs text-slate-400 mb-0.5">{{ n.created_at.strftime('%H:%M - %d.%m.%Y') }}</p>
+                                <p class="font-medium text-slate-700 dark:text-slate-200">{{ n.message }}</p>
+                            </div>
+                        {% else %}
+                            <p class="text-xs text-slate-400 italic px-4 py-3">Henüz bildirim yok.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="toggleTheme()" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                <i id="theme-icon" class="fa-solid fa-sun text-lg text-amber-500"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="flex">
+        <aside id="sidebar" class="w-64 border-r border-slate-200 dark:border-slate-800 h-[calc(100vh-65px)] p-6 space-y-8 hidden lg:block lg:!block sticky top-[65px] bg-white dark:bg-slate-900/50 z-30">
+            <div class="space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Menü</p>
+                <a href="{{ url_for('index', athlete_id=current_athlete.id) }}" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-200 transition {% if active_page=='dashboard' %}active{% endif %}"><i class="fa-solid fa-chart-pie w-5"></i> <span>Ana Sayfa</span></a>
+                <a href="{{ url_for('analytics', athlete_id=current_athlete.id) }}" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-200 transition {% if active_page=='analiz' %}active{% endif %}"><i class="fa-solid fa-chart-line w-5"></i> <span>Gelişmiş Analiz</span></a>
+                <a href="{{ url_for('ai_coach', athlete_id=current_athlete.id) }}" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-200 transition {% if active_page=='ai' %}active{% endif %}"><i class="fa-solid fa-brain w-5 text-purple-400"></i> <span>AI Analiz Odası</span></a>
+                <a href="{{ url_for('calendar_view', athlete_id=current_athlete.id) }}" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-200 transition {% if active_page=='takvim' %}active{% endif %}"><i class="fa-solid fa-calendar-alt w-5"></i> <span>Aktivite Takvimi</span></a>
+                <a href="{{ url_for('profile', athlete_id=current_athlete.id) }}" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-200 transition {% if active_page=='profil' %}active{% endif %}"><i class="fa-solid fa-user-gear w-5"></i> <span>Profil & Sağlık</span></a>
+            </div>
+
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Hızlı İşlemler</p>
+                <button onclick="document.getElementById('trainingModal').classList.remove('hidden')" class="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition mb-2">
+                    <i class="fa-solid fa-plus"></i> <span>Yeni Antrenman</span>
+                </button>
+                <a href="{{ url_for('simulate_training', athlete_id=current_athlete.id) }}" class="w-full flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold px-3 py-2.5 rounded-xl transition">
+                    <i class="fa-solid fa-dice"></i> <span>Sensör Verisi Simüle Et</span>
+                </a>
+            </div>
+
+            <div class="p-4 bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl relative overflow-hidden border border-indigo-500/20 shadow-xl">
+                <h4 class="font-bold text-sm mb-1 z-10 relative">Rapor Oluştur</h4>
+                <p class="text-xs text-indigo-200 mb-3 z-10 relative">Tüm AI verilerini ve grafik trendlerini içeren resmi PDF indirin.</p>
+                <a href="{{ url_for('export_pdf', athlete_id=current_athlete.id) }}" target="_blank" class="block text-center w-full bg-white text-indigo-900 text-xs font-bold py-2 rounded-lg hover:bg-indigo-50 transition shadow z-10 relative"><i class="fa-solid fa-file-pdf mr-1"></i> Raporu Dışa Aktar</a>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-4 md:p-6 lg:p-8 space-y-8 overflow-x-hidden custom-scrollbar max-w-7xl mx-auto w-full">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 {% if category=='error' %}bg-rose-500/10 border-rose-500 text-rose-400{% else %}bg-emerald-500/10 border-emerald-500 text-emerald-400{% endif %} border rounded-xl flex items-center space-x-2 shadow-lg">
+                            <i class="fa-solid {% if category=='error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i> <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Yeni Antrenman Modal -->
+    <div id="trainingModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center"><h3 class="text-lg font-bold">Yeni Antrenman Oturumu Ekle</h3><button onclick="document.getElementById('trainingModal').classList.add('hidden')" class="text-slate-400 text-xl">&times;</button></div>
+            <form action="{{ url_for('add_training') }}" method="POST" class="space-y-3 text-sm">
+                <input type="hidden" name="athlete_id" value="{{ current_athlete.id }}">
+                <div><label class="block mb-1 text-slate-400">Aktivite Türü</label>
+                    <select name="type" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg">
+                        <option value="Koşu">Koşu</option><option value="Bisiklet">Bisiklet</option><option value="Fitness">Fitness</option><option value="Yüzme">Yüzme</option><option value="Futbol">Futbol</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block mb-1 text-slate-400">Ort. Nabız (BPM)</label><input type="number" name="bpm" required min="40" max="220" value="130" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg"></div>
+                    <div><label class="block mb-1 text-slate-400">Süre (Dakika)</label><input type="number" name="duration" required min="1" value="45" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg"></div>
+                </div>
+                <div><label class="block mb-1 text-slate-400">Algılanan Yorgunluk (1-10)</label><input type="range" name="fatigue" min="1" max="10" value="5" class="w-full"></div>
+                <div><label class="block mb-1 text-slate-400">Seans Notları</label><textarea name="notes" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg"></textarea></div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-blue-600/20">Veritabanına İşle ve Analiz Et</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Yeni Sporcu Modal -->
+    <div id="athleteModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center"><h3 class="text-lg font-bold">Yeni Sporcu Tanımla</h3><button onclick="document.getElementById('athleteModal').classList.add('hidden')" class="text-slate-400 text-xl">&times;</button></div>
+            <form action="{{ url_for('add_athlete') }}" method="POST" class="space-y-3 text-sm">
+                <div><label class="block mb-1 text-slate-400">Sporcu Adı Soyadı</label><input type="text" name="name" required placeholder="Örn: Ali Yılmaz" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg"></div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg">Sisteme Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon text-lg text-indigo-600';
+                localStorage.setItem('akilliTakipTheme', 'light');
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-lg text-amber-500';
+                localStorage.setItem('akilliTakipTheme', 'dark');
+            }
+        }
+        (function() {
+            const saved = localStorage.getItem('akilliTakipTheme');
+            const icon = document.getElementById('theme-icon');
+            if (saved === 'light') {
+                document.documentElement.classList.remove('dark');
+                if (icon) icon.className = 'fa-solid fa-moon text-lg text-indigo-600';
+            }
+        })();
+
+        function toggleNotifDropdown() {
+            document.getElementById('notifDropdown').classList.toggle('hidden');
+        }
+
+        function readAllNotifs(athleteId) {
+            fetch(`/notifications/read_all/${athleteId}`).then(() => {
+                const badge = document.getElementById('notif-badge');
+                if (badge) badge.remove();
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('notifDropdown');
+            if (dropdown && !dropdown.classList.contains('hidden')) {
+                if (!e.target.closest('.relative.cursor-pointer')) {
+                    dropdown.classList.add('hidden');
+                }
+            }
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}AI Analiz Odası{% endblock %}
+{% block content %}
+
+<section class="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 p-8 rounded-2xl border border-indigo-500/20 text-white shadow-xl space-y-5">
+    <div class="flex items-center space-x-3">
+        <div class="p-3 bg-purple-500/20 text-purple-400 rounded-xl"><i class="fa-solid fa-brain text-2xl"></i></div>
+        <div>
+            <h2 class="text-xl font-bold">Yapay Zeka Spor Koçu — Detaylı Rapor</h2>
+            <p class="text-xs text-indigo-300">{{ current_athlete.name }} için son 5 antrenman verisi taranarak oluşturuldu.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 bg-white/5 rounded-xl border border-white/10 text-center">
+            <p class="text-xs text-indigo-300 uppercase mb-1">Risk Puanı</p>
+            <p class="text-4xl font-black">%{{ risk_score }}</p>
+        </div>
+        <div class="p-4 bg-white/5 rounded-xl border border-white/10 text-center">
+            <p class="text-xs text-indigo-300 uppercase mb-1">Risk Seviyesi</p>
+            <p class="text-2xl font-black {% if risk_level == 'Yüksek' %}text-rose-400{% elif risk_level == 'Orta' %}text-amber-400{% else %}text-emerald-400{% endif %}">{{ risk_level }}</p>
+        </div>
+        <div class="p-4 bg-white/5 rounded-xl border border-white/10 text-center">
+            <p class="text-xs text-indigo-300 uppercase mb-1">Performans Skoru</p>
+            <p class="text-4xl font-black text-teal-300">{{ performance_score }}</p>
+        </div>
+    </div>
+
+    <div class="p-5 bg-white/5 rounded-xl border border-white/10 space-y-2">
+        <div class="flex justify-between text-xs text-indigo-300"><span>Analiz Durumu: Canlı</span> <span>Risk Matrisi Kararı</span></div>
+        <p class="text-base leading-relaxed text-slate-100 italic">" {{ ai_feedback }} "</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-indigo-200">
+        <div class="p-3 bg-white/5 rounded-lg"><i class="fa-solid fa-circle-info mr-1 text-blue-400"></i> Son 5 antrenman verisi baz alınmıştır.</div>
+        <div class="p-3 bg-white/5 rounded-lg"><i class="fa-solid fa-shield-halved mr-1 text-emerald-400"></i> Aşırı antrenman sendromu koruması devrede.</div>
+        <div class="p-3 bg-white/5 rounded-lg"><i class="fa-solid fa-heart-pulse mr-1 text-rose-400"></i> Hedef nabız aralığı: {{ health.target_range }}</div>
+        <div class="p-3 bg-white/5 rounded-lg"><i class="fa-solid fa-weight-scale mr-1 text-amber-400"></i> Vücut Kitle İndeksi: {{ health.bmi }} ({{ health.bmi_status }})</div>
+    </div>
+</section>
+
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <h3 class="text-lg font-bold tracking-tight">Risk Skoru Geçmişi</h3>
+    <div class="h-64 relative"><canvas id="riskHistoryChart"></canvas></div>
+</div>
+
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <h3 class="text-lg font-bold tracking-tight">Geçmiş AI Raporları</h3>
+    <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse text-sm">
+            <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold text-xs uppercase">
+                    <th class="pb-3">Tarih</th>
+                    <th class="pb-3">Risk Puanı</th>
+                    <th class="pb-3">Seviye</th>
+                    <th class="pb-3">Geri Bildirim</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in risk_history[::-1][:15] %}
+                <tr class="border-b border-slate-100 dark:border-slate-800/60">
+                    <td class="py-3 text-xs text-slate-400">{{ r.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td class="py-3 font-bold">%{{ r.risk_score }}</td>
+                    <td class="py-3"><span class="text-xs px-2 py-0.5 rounded {% if r.risk_level == 'Yüksek' %}bg-rose-500/20 text-rose-400{% elif r.risk_level == 'Orta' %}bg-amber-500/20 text-amber-400{% else %}bg-emerald-500/20 text-emerald-400{% endif %} font-bold">{{ r.risk_level }}</span></td>
+                    <td class="py-3 text-xs text-slate-500 max-w-md">{{ r.feedback }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs">Henüz AI raporu oluşturulmadı.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const riskLabels = {{ risk_history|map(attribute='created_at')|map('string')|list|tojson }};
+    const riskValues = {{ risk_history|map(attribute='risk_score')|list|tojson }};
+
+    new Chart(document.getElementById('riskHistoryChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: riskLabels.map((d,i) => 'Rapor ' + (i+1)),
+            datasets: [{ label: 'Risk Puanı (%)', data: riskValues, borderColor: '#EAB308', backgroundColor: 'rgba(234,179,8,0.15)', tension: 0.3, fill: true }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+    });
+</script>
+{% endblock %}

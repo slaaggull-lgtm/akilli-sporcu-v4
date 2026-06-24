@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Aktivite Takvimi{% endblock %}
+{% block content %}
+
+<section class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <div>
+        <h3 class="text-lg font-bold tracking-tight">Antrenman Yoğunluk Matrisi</h3>
+        <p class="text-xs text-slate-400">Son 35 güne ait antrenman sıklığı grafiği (GitHub Katkı Haritası Tarzı)</p>
+    </div>
+    <div class="grid grid-cols-7 gap-2 pt-2 max-w-2xl">
+        {% for day in calendar_days %}
+            <div class="flex flex-col items-center">
+                <div class="w-9 h-9 rounded-md flex items-center justify-center text-[10px] font-bold shadow-sm transition cursor-default
+                    {% if day.count == 0 %} bg-slate-100 dark:bg-slate-800 text-slate-400
+                    {% elif day.count == 1 %} bg-emerald-900/40 text-emerald-300 border border-emerald-500/30
+                    {% elif day.count == 2 %} bg-emerald-600/70 text-white
+                    {% else %} bg-emerald-500 text-white font-black
+                    {% endif %}" title="{{ day.full_date }}: {{ day.count }} Antrenman">
+                    {{ day.count }}
+                </div>
+                <span class="text-[9px] text-slate-500 mt-1 scale-90">{{ day.date_str }}</span>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="flex items-center gap-4 text-[11px] text-slate-400 pt-2">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-slate-100 dark:bg-slate-800 inline-block"></span> Yok</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-900/40 inline-block"></span> 1 Antrenman</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-600/70 inline-block"></span> 2 Antrenman</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span> 3+ Antrenman</span>
+    </div>
+</section>
+
+<section class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <h3 class="text-lg font-bold tracking-tight">Tüm Antrenman Geçmişi</h3>
+    <div class="overflow-x-auto custom-scrollbar max-h-[28rem]">
+        <table class="w-full text-left border-collapse text-sm">
+            <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold text-xs uppercase sticky top-0 bg-white dark:bg-slate-900">
+                    <th class="pb-3">Tür</th>
+                    <th class="pb-3">Tarih</th>
+                    <th class="pb-3">BPM</th>
+                    <th class="pb-3">Süre</th>
+                    <th class="pb-3">Kalori</th>
+                    <th class="pb-3">Yorgunluk</th>
+                    <th class="pb-3">Not</th>
+                    <th class="pb-3 text-center">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in trainings %}
+                    <tr class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 font-bold text-blue-400"><i class="fa-solid {% if t.type == 'Koşu' %}fa-person-running{% elif t.type == 'Bisiklet' %}fa-bicycle{% elif t.type == 'Yüzme' %}fa-person-swimming{% elif t.type == 'Futbol' %}fa-futbol{% else %}fa-dumbbell{% endif %} mr-2"></i>{{ t.type }}</td>
+                        <td class="py-3.5 text-slate-400 text-xs">{{ t.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td class="py-3.5 font-semibold">{{ t.bpm }}</td>
+                        <td class="py-3.5 font-semibold">{{ t.duration }} dk</td>
+                        <td class="py-3.5 text-orange-400 font-bold">{{ t.calories }} kcal</td>
+                        <td class="py-3.5 text-xs">{{ t.fatigue or '-' }}/10</td>
+                        <td class="py-3.5 text-xs text-slate-400 max-w-xs truncate">{{ t.notes or '-' }}</td>
+                        <td class="py-3.5 text-center">
+                            <a href="{{ url_for('delete_training', id=t.id) }}" class="text-rose-500 hover:text-rose-400 text-xs bg-rose-500/10 p-2 rounded-lg transition" title="Sil"><i class="fa-solid fa-trash"></i></a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="8" class="py-6 text-center text-slate-400 text-xs">Henüz antrenman verisi bulunmuyor.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

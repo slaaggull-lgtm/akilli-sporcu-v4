@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Gelişmiş Analiz{% endblock %}
+{% block content %}
+
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h3 class="text-lg font-bold tracking-tight">Performans Trend Analiz Grafikleri</h3>
+            <p class="text-xs text-slate-400">Zaman aralıklarına göre kardiyovasküler, süre ve metabolik kırılımlar</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button data-range="7" onclick="loadChartData('7', this)" class="range-btn px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold rounded-lg">7 Gün</button>
+            <button data-range="30" onclick="loadChartData('30', this)" class="range-btn px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold rounded-lg">30 Gün</button>
+            <button data-range="90" onclick="loadChartData('90', this)" class="range-btn px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold rounded-lg">90 Gün</button>
+            <button data-range="all" onclick="loadChartData('all', this)" class="range-btn px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm">Tüm Zamanlar</button>
+            <button onclick="downloadChart('bpmRiskChart','bpm_risk')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-sm" title="PNG Olarak İndir"><i class="fa-solid fa-download"></i> Export</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <h4 class="text-xs font-bold uppercase text-slate-400 mb-3"><i class="fa-solid fa-heart-pulse mr-1 text-rose-500"></i> Kalp Atım Hızı (BPM) & Risk Trendi</h4>
+            <div class="h-72 relative"><canvas id="bpmRiskChart"></canvas></div>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <h4 class="text-xs font-bold uppercase text-slate-400 mb-3"><i class="fa-solid fa-fire mr-1 text-orange-500"></i> Süre (Dk) & Yakılan Kalori (Kcal) Dağılımı</h4>
+            <div class="h-72 relative"><canvas id="durationCalorieChart"></canvas></div>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <h4 class="text-xs font-bold uppercase text-slate-400 mb-3"><i class="fa-solid fa-gauge mr-1 text-purple-400"></i> Algılanan Yorgunluk Trendi</h4>
+            <div class="h-72 relative"><canvas id="fatigueChart"></canvas></div>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <h4 class="text-xs font-bold uppercase text-slate-400 mb-3"><i class="fa-solid fa-chart-pie mr-1 text-teal-400"></i> Aktivite Türü Dağılımı</h4>
+            <div class="h-72 relative"><canvas id="typeChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">En Yüksek Nabız</span>
+        <p class="text-3xl font-black text-rose-500 mt-2">{{ best_bpm }} <span class="text-xs font-normal text-slate-400">bpm</span></p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">En Uzun Antrenman</span>
+        <p class="text-3xl font-black text-amber-500 mt-2">{{ longest_training }} <span class="text-xs font-normal text-slate-400">dk</span></p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Performans Skoru</span>
+        <p class="text-3xl font-black text-teal-500 mt-2">{{ performance_score }} <span class="text-xs font-normal text-slate-400">/ 100</span></p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let bpmChart, durCalChart, fatigueChart, typeChart;
+    const athleteId = {{ current_athlete.id }};
+
+    function destroyCharts() {
+        [bpmChart, durCalChart, fatigueChart, typeChart].forEach(c => { if (c) c.destroy(); });
+    }
+
+    function loadChartData(range, btn) {
+        document.querySelectorAll('.range-btn').forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-white');
+            b.classList.add('bg-slate-100', 'dark:bg-slate-800');
+        });
+        if (btn) {
+            btn.classList.remove('bg-slate-100', 'dark:bg-slate-800');
+            btn.classList.add('bg-blue-600', 'text-white');
+        }
+
+        fetch(`/chart-data/${athleteId}?days=${range}`)
+            .then(res => res.json())
+            .then(data => {
+                destroyCharts();
+
+                const ctx1 = document.getElementById('bpmRiskChart').getContext('2d');
+                bpmChart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            { label: 'BPM', data: data.bpm, borderColor: '#F43F5E', backgroundColor: 'rgba(244,63,94,0.1)', tension: 0.3, fill: true },
+                            { label: 'Risk Endeksi', data: data.risk, borderColor: '#EAB308', borderDash: [5,5], tension: 0.1, fill: false }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxRotation: 0, autoSkip: true } } } }
+                });
+
+                const ctx2 = document.getElementById('durationCalorieChart').getContext('2d');
+                durCalChart = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            { label: 'Süre (dk)', data: data.duration, backgroundColor: '#3B82F6' },
+                            { label: 'Kalori (kcal)', data: data.calories, backgroundColor: '#F97316' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxRotation: 0, autoSkip: true } } } }
+                });
+
+                const ctx3 = document.getElementById('fatigueChart').getContext('2d');
+                fatigueChart = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            { label: 'Yorgunluk (1-10)', data: data.fatigue, borderColor: '#A855F7', backgroundColor: 'rgba(168,85,247,0.15)', tension: 0.35, fill: true }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10 }, x: { ticks: { maxRotation: 0, autoSkip: true } } } }
+                });
+
+                const ctx4 = document.getElementById('typeChart').getContext('2d');
+                typeChart = new Chart(ctx4, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.type_labels,
+                        datasets: [{ data: data.type_counts, backgroundColor: ['#3B82F6','#F97316','#10B981','#A855F7','#F43F5E'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            });
+    }
+
+    function downloadChart(canvasId, name) {
+        const a = document.createElement('a');
+        a.href = document.getElementById(canvasId).toDataURL('image/png');
+        a.download = `akillitakip_${name}.png`;
+        a.click();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const allBtn = document.querySelector('.range-btn[data-range="all"]');
+        loadChartData('all', allBtn);
+    });
+</script>
+{% endblock %}

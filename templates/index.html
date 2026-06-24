@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Ana Sayfa{% endblock %}
+{% block content %}
+
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
+    <div class="flex items-center space-x-4">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+            {{ current_athlete.name[:2].upper() }}
+        </div>
+        <div>
+            <h2 class="text-2xl font-extrabold tracking-tight">{{ current_athlete.name }}</h2>
+            <div class="flex flex-wrap gap-2 mt-1 text-xs font-medium text-slate-400">
+                <span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-blue-400"><i class="fa-solid fa-dumbbell mr-1"></i>{{ current_athlete.sport_branch }}</span>
+                <span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"><i class="fa-solid fa-cake-candles mr-1"></i>{{ current_athlete.age }} Yaş</span>
+            </div>
+        </div>
+    </div>
+    <div class="flex space-x-3">
+        <button onclick="document.getElementById('trainingModal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i> <span>Yeni Antrenman</span>
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Toplam Antrenman</span><i class="fa-solid fa-calendar-check text-blue-500"></i></div>
+        <p class="text-2xl md:text-3xl font-black">{{ total_trainings }}</p>
+        <p class="text-[11px] text-emerald-500 mt-1"><i class="fa-solid fa-arrow-up-long"></i> Bu hafta {{ weekly_count }} antrenman</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ortalama BPM</span><i class="fa-solid fa-heart text-rose-500"></i></div>
+        <p class="text-2xl md:text-3xl font-black">{{ avg_bpm }} <span class="text-xs font-normal text-slate-400">bpm</span></p>
+        <p class="text-[11px] text-slate-400 mt-1">Hedef: {{ health.target_range }}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Toplam Süre</span><i class="fa-solid fa-clock text-amber-500"></i></div>
+        <p class="text-2xl md:text-3xl font-black">{{ total_duration }} <span class="text-xs font-normal text-slate-400">dk</span></p>
+        <p class="text-[11px] text-amber-500 mt-1"><i class="fa-solid fa-bolt"></i> Aktif Dayanıklılık</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Toplam Kalori</span><i class="fa-solid fa-fire-flame-curved text-orange-500"></i></div>
+        <p class="text-2xl md:text-3xl font-black">{{ total_calories }} <span class="text-xs font-normal text-slate-400">kcal</span></p>
+        <p class="text-[11px] text-orange-400 mt-1">Metabolik Tüketim</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Risk Puanı & Seviyesi</span><i class="fa-solid fa-triangle-exclamation text-yellow-500"></i></div>
+        <p class="text-2xl md:text-3xl font-black flex items-baseline space-x-1">
+            <span>%{{ risk_score }}</span>
+            <span class="text-xs px-2 py-0.5 rounded {% if risk_level == 'Yüksek' %}bg-rose-500/20 text-rose-400{% elif risk_level == 'Orta' %}bg-amber-500/20 text-amber-400{% else %}bg-emerald-500/20 text-emerald-400{% endif %} font-bold">{{ risk_level }}</span>
+        </p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Performans Skoru</span><i class="fa-solid fa-chart-line text-teal-400"></i></div>
+        <p class="text-2xl md:text-3xl font-black text-teal-400">{{ performance_score }}</p>
+        <p class="text-[11px] text-slate-400 mt-1">100 üzerinden</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-3"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Son Antrenman</span><i class="fa-solid fa-history text-indigo-400"></i></div>
+        <p class="text-sm font-bold mt-2">{% if trainings %}{{ trainings[0].date.strftime('%d %B %Y') }}{% else %}Veri Yok{% endif %}</p>
+        <p class="text-[11px] text-slate-400">{% if trainings %}{{ trainings[0].type }} - {{ trainings[0].duration }} dk{% else %}Henüz antrenman eklenmedi{% endif %}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-[1.02] transition-transform">
+        <div class="flex justify-between items-start mb-2"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Haftalık Süre Hedefi</span><i class="fa-solid fa-bullseye text-purple-400"></i></div>
+        {% set g = goals[0] if goals else None %}
+        <div class="flex items-center space-x-2 mt-3">
+            <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full" style="width: {{ ((g.current_value / g.target_value)*100) if g and g.target_value else 0 }}%"></div>
+            </div>
+            <span class="text-xs font-bold">{{ g.current_value if g else 0 }}/{{ g.target_value if g else 0 }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 p-6 rounded-2xl border border-indigo-500/20 text-white shadow-xl space-y-4">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-purple-500/20 text-purple-400 rounded-lg"><i class="fa-solid fa-brain text-xl"></i></div>
+            <div>
+                <h3 class="text-lg font-bold">Yapay Zeka Spor Koçu Raporu</h3>
+                <p class="text-xs text-indigo-300">Medikal parametreler ve geçmiş veriler anlık taranmıştır</p>
+            </div>
+        </div>
+        <div class="p-4 bg-white/5 rounded-xl border border-white/10 space-y-2">
+            <div class="flex justify-between text-xs text-indigo-300"><span>Analiz Durumu: Canlı</span> <span>Risk Matrisi Kararı</span></div>
+            <p class="text-sm leading-relaxed text-slate-200 italic">" {{ ai_feedback }} "</p>
+        </div>
+        <a href="{{ url_for('ai_coach', athlete_id=current_athlete.id) }}" class="inline-flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fa-solid fa-arrow-right mr-1"></i> Detaylı AI analiz odasına git</a>
+    </section>
+
+    <section class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold tracking-tight"><i class="fa-solid fa-crosshairs text-blue-500 mr-2"></i>Aktif Hedef Takibi</h3>
+        <div class="space-y-4">
+            {% for g in goals %}
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span>{{ g.period }} {{ g.type }} Hedefi</span>
+                        <span class="text-slate-400">{{ g.current_value }} / {{ g.target_value }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: {{ ((g.current_value / g.target_value)*100) if g.target_value else 0 }}%"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold tracking-tight">Son Aktivite Geçmişi</h3>
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold text-xs uppercase">
+                        <th class="pb-3">Tür</th>
+                        <th class="pb-3">Tarih</th>
+                        <th class="pb-3">BPM</th>
+                        <th class="pb-3">Süre</th>
+                        <th class="pb-3">Kalori</th>
+                        <th class="pb-3 text-center">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in trainings[:8] %}
+                        <tr class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-3.5 font-bold text-blue-400"><i class="fa-solid {% if t.type == 'Koşu' %}fa-person-running{% elif t.type == 'Bisiklet' %}fa-bicycle{% elif t.type == 'Yüzme' %}fa-person-swimming{% elif t.type == 'Futbol' %}fa-futbol{% else %}fa-dumbbell{% endif %} mr-2"></i>{{ t.type }}</td>
+                            <td class="py-3.5 text-slate-400 text-xs">{{ t.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td class="py-3.5 font-semibold">{{ t.bpm }} <span class="text-xs font-normal text-slate-500">bpm</span></td>
+                            <td class="py-3.5 font-semibold">{{ t.duration }} <span class="text-xs font-normal text-slate-500">dk</span></td>
+                            <td class="py-3.5 text-orange-400 font-bold">{{ t.calories }} kcal</td>
+                            <td class="py-3.5 text-center">
+                                <a href="{{ url_for('delete_training', id=t.id) }}" class="text-rose-500 hover:text-rose-400 text-xs bg-rose-500/10 p-2 rounded-lg transition" title="Sil"><i class="fa-solid fa-trash"></i></a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="py-6 text-center text-slate-400 text-xs">Henüz antrenman verisi bulunmuyor.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold tracking-tight"><i class="fa-solid fa-trophy text-amber-500 mr-2"></i>Kazanılan Başarımlar</h3>
+        <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+            {% for a in achievements %}
+                <div class="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="text-2xl">🏆</div>
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200">{{ a.title }}</h4>
+                        <p class="text-[11px] text-slate-400">{{ a.description }}</p>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-400 italic">Daha fazla antrenman yaparak ilk başarım kilidini açın!</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

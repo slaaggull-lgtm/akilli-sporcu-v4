@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Profil & Sağlık{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gradient-to-tr from-slate-900 to-slate-800 text-white p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+        <h3 class="text-lg font-bold tracking-tight text-blue-400"><i class="fa-solid fa-heart-pulse mr-2"></i>Klinik Sağlık Analiz Matrisi</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="p-3 bg-white/5 rounded-xl">
+                <span class="block text-[11px] text-slate-400 uppercase">Vücut Kitle İndeksi (BMI)</span>
+                <span class="text-xl font-bold text-{{ health.bmi_color }}-400">{{ health.bmi }}</span>
+                <span class="block text-[10px] text-slate-400">{{ health.bmi_status }}</span>
+            </div>
+            <div class="p-3 bg-white/5 rounded-xl"><span class="block text-[11px] text-slate-400 uppercase">Maksimum Nabız</span><span class="text-xl font-bold text-rose-400">{{ health.max_bpm }} bpm</span></div>
+            <div class="p-3 bg-white/5 rounded-xl"><span class="block text-[11px] text-slate-400 uppercase">Hedef Antrenman Aralığı</span><span class="text-sm font-bold text-amber-400">{{ health.target_range }}</span></div>
+            <div class="p-3 bg-white/5 rounded-xl"><span class="block text-[11px] text-slate-400 uppercase">Günlük Kalori İhtiyacı</span><span class="text-xl font-bold text-indigo-400">{{ health.daily_calories }} kcal</span></div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <h3 class="text-lg font-bold tracking-tight mb-4">Fiziksel Profil Parametrelerini Güncelle</h3>
+        <form action="{{ url_for('update_athlete', id=current_athlete.id) }}" method="POST" class="grid grid-cols-2 gap-3 text-xs">
+            <div><label class="block font-semibold mb-1 text-slate-400">Ad Soyad:</label><input type="text" name="name" value="{{ current_athlete.name }}" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg text-sm"></div>
+            <div><label class="block font-semibold mb-1 text-slate-400">Yaş:</label><input type="number" name="age" value="{{ current_athlete.age }}" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg text-sm"></div>
+            <div><label class="block font-semibold mb-1 text-slate-400">Boy (cm):</label><input type="number" name="height" value="{{ current_athlete.height }}" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg text-sm"></div>
+            <div><label class="block font-semibold mb-1 text-slate-400">Kilo (kg):</label><input type="number" step="0.1" name="weight" value="{{ current_athlete.weight }}" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg text-sm"></div>
+            <div class="col-span-2">
+                <label class="block font-semibold mb-1 text-slate-400">Spor Dalı:</label>
+                <select name="sport_branch" class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-2.5 rounded-lg text-sm">
+                    <option value="Koşu" {% if current_athlete.sport_branch=='Koşu' %}selected{% endif %}>Koşu</option>
+                    <option value="Bisiklet" {% if current_athlete.sport_branch=='Bisiklet' %}selected{% endif %}>Bisiklet</option>
+                    <option value="Fitness" {% if current_athlete.sport_branch=='Fitness' %}selected{% endif %}>Fitness</option>
+                    <option value="Yüzme" {% if current_athlete.sport_branch=='Yüzme' %}selected{% endif %}>Yüzme</option>
+                    <option value="Futbol" {% if current_athlete.sport_branch=='Futbol' %}selected{% endif %}>Futbol</option>
+                </select>
+            </div>
+            <button type="submit" class="col-span-2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 font-bold py-2.5 rounded-lg mt-2 text-sm">Değişiklikleri Kaydet</button>
+        </form>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold tracking-tight"><i class="fa-solid fa-trophy text-amber-500 mr-2"></i>Tüm Başarımlar ({{ achievements|length }}/{{ all_possible_achievements }})</h3>
+        <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+            {% for a in achievements %}
+                <div class="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="text-2xl">🏆</div>
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200">{{ a.title }}</h4>
+                        <p class="text-[11px] text-slate-400">{{ a.description }}</p>
+                        <p class="text-[10px] text-slate-500">{{ a.unlocked_at.strftime('%d.%m.%Y') }}</p>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-400 italic">Daha fazla antrenman yaparak ilk başarım kilidini açın!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold tracking-tight"><i class="fa-solid fa-users text-blue-500 mr-2"></i>Sporcu Yönetimi</h3>
+        <div class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+            {% for a in athletes %}
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xs font-bold">{{ a.name[:2].upper() }}</div>
+                        <div>
+                            <p class="text-sm font-semibold">{{ a.name }}</p>
+                            <p class="text-[11px] text-slate-400">{{ a.sport_branch }} • {{ a.age }} yaş</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ url_for('index', athlete_id=a.id) }}" class="text-xs px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition">Görüntüle</a>
+                        {% if athletes|length > 1 %}
+                        <a href="{{ url_for('delete_athlete', id=a.id) }}" class="text-xs px-2 py-1 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20 transition" onclick="return confirm('Bu sporcuyu silmek istediğinize emin misiniz?');"><i class="fa-solid fa-trash"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <button onclick="document.getElementById('athleteModal').classList.remove('hidden')" class="w-full flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
+            <i class="fa-solid fa-user-plus"></i> <span>Yeni Sporcu Ekle</span>
+        </button>
+    </div>
+</div>
+
+{% endblock %}

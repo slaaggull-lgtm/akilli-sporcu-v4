@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Resmi Performans Analiz Raporu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white text-slate-900 p-10" onload="window.print()">
+    <div class="border-b-2 border-slate-300 pb-5 mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">AkıllıTakip Sağlık & Performans Raporu</h1>
+            <p class="text-xs text-slate-500">Oluşturulma Tarihi: {{ generated_at }}</p>
+        </div>
+        <div class="text-right">
+            <h2 class="text-lg font-bold text-indigo-600">{{ athlete.name }}</h2>
+            <p class="text-xs text-slate-500">{{ athlete.sport_branch }} Sporcusu • {{ athlete.age }} yaş</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <p class="text-[10px] uppercase text-slate-500">BMI</p>
+            <p class="text-lg font-bold">{{ health.bmi }}</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <p class="text-[10px] uppercase text-slate-500">Maks. Nabız</p>
+            <p class="text-lg font-bold">{{ health.max_bpm }}</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <p class="text-[10px] uppercase text-slate-500">Hedef Aralık</p>
+            <p class="text-lg font-bold">{{ health.target_range }}</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <p class="text-[10px] uppercase text-slate-500">Günlük Kalori</p>
+            <p class="text-lg font-bold">{{ health.daily_calories }}</p>
+        </div>
+    </div>
+
+    <div class="mb-6 p-4 bg-slate-100 rounded-xl">
+        <h3 class="text-sm font-bold uppercase mb-2 text-indigo-800">Yapay Zeka Koç Değerlendirmesi</h3>
+        {% if report %}
+        <p class="text-xs mb-1">Risk Puanı: <span class="font-bold">%{{ report.risk_score }}</span> — Seviye: <span class="font-bold">{{ report.risk_level }}</span></p>
+        {% endif %}
+        <p class="text-sm italic">" {{ report.feedback if report else 'Analiz geçmişi bulunmuyor.' }} "</p>
+    </div>
+
+    {% if achievements %}
+    <div class="mb-6">
+        <h3 class="text-sm font-bold uppercase mb-2">Kazanılan Başarımlar</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for a in achievements %}
+            <span class="text-xs px-3 py-1 bg-amber-50 border border-amber-200 rounded-full">🏆 {{ a.title }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <h3 class="text-sm font-bold uppercase mb-3">Antrenman Listesi & Metrik Özetleri</h3>
+    <table class="w-full text-left border-collapse text-xs">
+        <thead>
+            <tr class="border-b border-slate-300 bg-slate-50">
+                <th class="p-2">Aktivite</th>
+                <th class="p-2">Tarih</th>
+                <th class="p-2">BPM</th>
+                <th class="p-2">Süre (Dk)</th>
+                <th class="p-2">Kalori</th>
+                <th class="p-2">Yorgunluk</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in trainings %}
+            <tr class="border-b border-slate-200">
+                <td class="p-2 font-bold">{{ t.type }}</td>
+                <td class="p-2">{{ t.date.strftime('%d.%m.%Y') }}</td>
+                <td class="p-2">{{ t.bpm }}</td>
+                <td class="p-2">{{ t.duration }}</td>
+                <td class="p-2 font-semibold text-orange-600">{{ t.calories }} kcal</td>
+                <td class="p-2">{{ t.fatigue or '-' }}/10</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="p-4 text-center text-slate-400">Antrenman verisi bulunmuyor.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="text-[10px] text-slate-400 mt-8 text-center">Bu rapor AkıllıTakip Pro Performans Analiz Motoru tarafından otomatik olarak oluşturulmuştur.</p>
+</body>
+</html>
