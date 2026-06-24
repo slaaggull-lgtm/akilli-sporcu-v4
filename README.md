@@ -1,1 +1,0 @@
-# akilli-sporcu-v4
